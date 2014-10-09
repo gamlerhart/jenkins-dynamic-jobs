@@ -144,7 +144,7 @@ def readInfo(File root, File project){
         testFolder = "test"
     }
     new BuildInfo(
-            namespace:"jenkins-test-user",
+            namespace:"spoon-jenkins-user",
             name:name,
             email:email,
             platform: platform,

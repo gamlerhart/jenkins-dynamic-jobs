@@ -32,10 +32,12 @@ IF EXIST test (
     exit %ERRORLEVEL%
   )
   spoon push %SPOON_NAMESPACE%/%SPOON_REPO%:%VERSION%
+  if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
   rem This is to avoid filling the build machine will useless images
   spoon rmi --all
 ) ELSE (
   spoon push %SPOON_NAMESPACE%/%SPOON_REPO%:%VERSION%
+  if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
   rem This is to avoid filling the build machine will useless images
   spoon rmi --all
 )
