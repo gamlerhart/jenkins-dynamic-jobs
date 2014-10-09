@@ -27,6 +27,12 @@ def itemsToBuild =  listOfProjects.collect{
     readInfo(targetDir,it)
 }
 
+println "We are going to build: "
+
+itemsToBuild.each{
+    println "- "+it
+}
+
 def newSpoonizeJobs = itemsToBuild.collect { info ->
     def xml = buildSpoonizeXml(info,spoonizeTemplate)
     [xml:xml,info:info]
