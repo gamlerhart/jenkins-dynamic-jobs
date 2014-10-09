@@ -37,15 +37,21 @@ def newTestJobs = itemsToBuild.collect { info ->
     [xml:xml,info:info]
 }
 
+println "Creating spoonize jobs now"
 newSpoonizeJobs.each {
     jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
 }
 
+println "Creating testing jobs now"
 newTestJobs.each {
     jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
 }
 
-
+println "Trigger build job now"
+newSpoonizeJobs.each {
+    jenkinsApi.postText("job/${it.info.testProjectName()}/build")
+}
+println "Done. Building now"
 
 def buildSpoonizeXml(BuildInfo projectInfo, templateXml){
     println "Building Spoonizing Job for: "+projectInfo
