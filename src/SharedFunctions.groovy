@@ -44,7 +44,7 @@ class JenkinsOperations {
     String jenkinsUrl;
 
     JenkinsOperations(String jenkinsUrl) {
-        this.jenkinsUrl = jenkinsUrl + "/"
+        this.jenkinsUrl = jenkinsUrl
     }
 
     def getXml(String path) {
