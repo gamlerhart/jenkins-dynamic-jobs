@@ -2,6 +2,9 @@ set SPOON_NAMESPACE={namespace}
 set SPOON_REPO={repo-name}
 set VERSION={version}
 IF EXIST test (
+  spoon logout
+  spoon login %SPOON_USER% %SPOON_PWD%
+  spoon config --hub=http://dev-stage.spoon.net
   echo "Rough test before publishing"
   cd test/
 
@@ -12,11 +15,6 @@ IF EXIST test (
     echo "Failed test with %ERRORLEVEL%"
     exit %ERRORLEVEL%
   )
-  spoon push %SPOON_NAMESPACE%/%SPOON_REPO%:%VERSION%
-  rem This is to avoid filling the build machine will useless images
-  spoon rmi --all
 ) ELSE (
-  spoon push %SPOON_NAMESPACE%/%SPOON_REPO%:%VERSION%
-  rem This is to avoid filling the build machine will useless images
-  spoon rmi --all
+   echo "no tests. we're done"
 )
