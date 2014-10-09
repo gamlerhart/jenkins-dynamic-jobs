@@ -5,8 +5,8 @@ import groovy.xml.XmlUtil
 import groovy.transform.BaseScript
 @BaseScript SharedFunctions mainScript
 
-def spoonizeTemplate = jenkinsApi.getXml('/job/Template-Spoonize-Release/config.xml')
-def testTemplate = jenkinsApi.getXml('/job/Template-Test-Spoonized-Release/config.xml')
+def spoonizeTemplate = jenkinsApi.getXmlText('/job/Template-Spoonize-Release/config.xml')
+def testTemplate = jenkinsApi.getXmlText('/job/Template-Test-Spoonized-Release/config.xml')
 
 def listOfProjects = []
 def targetDir = new File("./target-repo")
@@ -43,12 +43,12 @@ def newTestJobs = itemsToBuild.collect { info ->
     [xml:xml,info:info]
 }
 
-println "Creating spoonize jobs now"
+println "Posting spoonize jobs now"
 newSpoonizeJobs.each {
     jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
 }
 
-println "Creating testing jobs now"
+println "Posting testing jobs now"
 newTestJobs.each {
     jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
 }
@@ -59,21 +59,21 @@ newSpoonizeJobs.each {
 }
 println "Done. Building now"
 
-def buildSpoonizeXml(BuildInfo projectInfo, templateXml){
+def buildSpoonizeXml(BuildInfo projectInfo, theTemplate){
     println "Building Spoonizing Job for: "+projectInfo
-    def configXml = new XmlParser().parseText( XmlUtil.serialize( templateXml ) )
+    def configXml = new XmlSlurper().parseText( theTemplate )
 
-    baseXmlSetup(templateXml, projectInfo)
+    baseXmlSetup(configXml, projectInfo)
 
-    templateXml.assignedNode = projectInfo.platform+"-spoonizer"
+    configXml.assignedNode = projectInfo.platform+"-spoonizer"
 
-    def batchFile = tagByName(templateXml,"hudson.tasks.BatchFile")
+    def batchFile = tagByName(configXml,"hudson.tasks.BatchFile")
     batchFile.command = copyInSpoonizeCommand(projectInfo,"spoonize-project-template.bat");
 
-    def nextJob = tagByName(templateXml,"hudson.plugins.parameterizedtrigger.BuildTriggerConfig")
+    def nextJob = tagByName(configXml,"hudson.plugins.parameterizedtrigger.BuildTriggerConfig")
     nextJob.projects = projectInfo.testProjectName()
 
-    templateXml
+    configXml
 }
 
 def baseXmlSetup(templateXml, BuildInfo projectInfo) {
@@ -86,20 +86,20 @@ def baseXmlSetup(templateXml, BuildInfo projectInfo) {
     email.recipients = projectInfo.email
 }
 
-def buildTestXml(BuildInfo projectInfo, templateXml){
+def buildTestXml(BuildInfo projectInfo, theTemplate){
     println "Building Test Job for: "+projectInfo
-    def configXml = new XmlParser().parseText( XmlUtil.serialize( templateXml ) )
+    def configXml = new XmlSlurper().parseText(theTemplate )
 
-    baseXmlSetup(templateXml, projectInfo)
+    baseXmlSetup(configXml, projectInfo)
 
-    def batchFile = tagByName(templateXml,"hudson.tasks.BatchFile")
+    def batchFile = tagByName(configXml,"hudson.tasks.BatchFile")
     batchFile.command = copyInSpoonizeCommand(projectInfo,"test-project-template.bat");
 
 
-    def testMachines = tagByName(templateXml,"org.jenkinsci.plugins.elasticaxisplugin.ElasticAxis")
+    def testMachines = tagByName(configXml,"org.jenkinsci.plugins.elasticaxisplugin.ElasticAxis")
     testMachines.label = projectInfo.platform+"-test"
 
-    templateXml
+    configXml
 }
 
 def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){

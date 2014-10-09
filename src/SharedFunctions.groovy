@@ -48,14 +48,17 @@ class JenkinsOperations {
     }
 
     def getXml(String path) {
+        def result = new XmlSlurper().parseText(getXmlText(path))
+        result
+    }
+    def getXmlText(String path) {
         def fullUrl = jenkinsUrl + path
         def request = new HttpGet(fullUrl)
         def response = httpclient.execute(request)
         if (response.getStatusLine().getStatusCode() == 200) {
             def content = EntityUtils.toString(response.getEntity())
-            def result = new XmlSlurper().parseText(content)
             response.close()
-            result
+            content
         } else {
             throw new WebException("Failed $fullUrl with status code: " + response.getStatusLine().getStatusCode())
         }
