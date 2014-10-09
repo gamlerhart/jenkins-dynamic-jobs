@@ -132,9 +132,9 @@ def readInfo(File root, File project){
         name = getRepoName(gitUrl())
     }
 
-    def buildInfoFile = new File(project,"autobuild.config.txt")
+    def buildInfoFile = new File(project,"autobuild.config.json")
     if(buildInfoFile.exists()){
-        def buildInfo =json.parse(buildInfo)
+        def buildInfo =json.parse(buildInfoFile)
         platform = buildInfo.platform ?:platform
         email = buildInfo.email ?:email
         name = buildInfo.name ?:name
