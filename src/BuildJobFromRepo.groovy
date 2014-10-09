@@ -49,7 +49,7 @@ newTestJobs.each {
 
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    jenkinsApi.postText("job/${it.info.testProjectName()}/build")
+    jenkinsApi.postText("job/${it.info.testProjectName()}/build","")
 }
 println "Done. Building now"
 
