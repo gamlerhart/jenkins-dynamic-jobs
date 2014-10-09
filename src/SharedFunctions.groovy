@@ -56,7 +56,7 @@ class JenkinsOperations {
             response.close()
             result
         } else {
-            throw new WebException("Failed with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
@@ -71,7 +71,7 @@ class JenkinsOperations {
             EntityUtils.consume(response.getEntity())
             response.close()
         } else {
-            throw new WebException("Failed with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
@@ -85,7 +85,7 @@ class JenkinsOperations {
             EntityUtils.consume(response.getEntity())
             response.close()
         } else {
-            throw new WebException("Failed with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
