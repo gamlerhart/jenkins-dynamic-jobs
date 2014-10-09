@@ -1,62 +1,33 @@
-@Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1' )
-import groovyx.net.http.HTTPBuilder
-import groovyx.net.http.Method
-import groovyx.net.http.ContentType
+@Grab(group='org.apache.httpcomponents', module='httpclient', version='4.3.5' )
+import org.apache.http.client.HttpClient
 import groovy.xml.XmlUtil
+import groovy.transform.BaseScript
+@BaseScript SharedFunctions mainScript
 
 
 
-def env = System.getenv()
-
-if(null==env['GIT_URL']){
-    throw new EnvironmentVariableMissing("GIT_URL")
-}
-if(null==env['JENKINS_URL']){
-    throw new EnvironmentVariableMissing("JENKINS_URL")
-}
-
-println "Building the project for this Git-Repo: ${env['GIT_REPO']} and will notify ${env['NOTIFY_EMAIL']}"
-
-def jenkinsApi = new HTTPBuilder(env['JENKINS_URL'])
+println "Building the project for Git-Repo: ${gitUrl()}"
 
 
-def templateXml = jenkinsApi.get(path: '/job/Template-Monitor-Git-And-Create-Job/config.xml',
-        contentType : ContentType.XML)
+def templateXml = jenkinsApi.getXml('/job/Template-Monitor-Git-And-Create-Job/config.xml')
 
-templateXml.project.disabled = "false"
+templateXml.disabled = "false"
 
 
 def gitConfig = templateXml.depthFirst().find {
     println(it.name)
     it.name() == "hudson.plugins.git.UserRemoteConfig"
 }
-gitConfig.url = env['GIT_REPO']
+gitConfig.url = gitUrl()
 
 def user = "spoon-jenkins-user"
-def mainRepoName = new URI(env['GIT_URL']).getPath().split("/").last().split("\\.").first()
+def mainRepoName = getRepoName(gitUrl())
 def jobname = "z-auto-$user-$mainRepoName-job-control"
 
 
-def bodyTxt = XmlUtil.serialize(templateXml)
-jenkinsApi.request( Method.POST, ContentType.XML ) {
-    uri.path = '/createItem'
-    uri.query = [name:jobname]
-    body = bodyTxt
+jenkinsApi.postXml("/createItem?name=$jobname",templateXml)
 
-}
-
-jenkinsApi.request(Method.POST, ContentType.TEXT) {
-    uri.path = "/job/$jobname/build"
-    body = ""
-
-}
+jenkinsApi.postText("/job/$jobname/build","")
 
 
 
-
-
-class EnvironmentVariableMissing extends Exception{
-    EnvironmentVariableMissing(String variableName) {
-        super("Missing enviroment variable $variableName")
-    }
-}
