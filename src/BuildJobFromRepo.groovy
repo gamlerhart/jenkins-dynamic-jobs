@@ -127,16 +127,17 @@ def readInfo(File root, File project){
 
     def platform = "32-bit"
     def email = "roman@spoon.net"
+    def name = project.getName()
+    if(name=="target-repo"){
+        name = getRepoName(gitUrl())
+    }
 
-    def buildInfoFile = new File(project,"autobuild.build-info.txt")
+    def buildInfoFile = new File(project,"autobuild.config.txt")
     if(buildInfoFile.exists()){
         def buildInfo =json.parse(buildInfo)
         platform = buildInfo.platform ?:platform
         email = buildInfo.email ?:email
-    }
-    def name = project.getName()
-    if(name=="target-repo"){
-        name = getRepoName(gitUrl())
+        name = buildInfo.name ?:name
     }
     def testFolder = ""
     if(new File(root,"test").exists()){
