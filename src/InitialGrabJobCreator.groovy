@@ -22,7 +22,7 @@ gitConfig.url = gitUrl()
 
 def user = "spoon-jenkins-user"
 def mainRepoName = getRepoName(gitUrl())
-def jobname = "z-auto-$user-$mainRepoName-job-control"
+def jobname = "$user-$mainRepoName-job-control"
 
 
 jenkinsApi.postXml("/createItem?name=$jobname",templateXml)

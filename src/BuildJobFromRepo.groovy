@@ -160,9 +160,9 @@ def readInfo(File root, File project){
 
 
     def spoonizeProjectName(){
-        "z-auto-$namespace-$name-spoonize"
+        "$namespace-$name-spoonize"
     }
     def testProjectName(){
-        "z-auto-$namespace-$name-test"
+        "$namespace-$name-test"
     }
 }
