@@ -1,3 +1,6 @@
+set SPOON_NAMESPACE={namespace}
+set SPOON_REPO={repo-name}
+set VERSION={version}
 IF EXIST test (
   echo "Rough test before publishing"
   cd test/

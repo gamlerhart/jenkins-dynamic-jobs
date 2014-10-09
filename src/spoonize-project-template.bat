@@ -1,5 +1,6 @@
 set SPOON_NAMESPACE={namespace}
 set SPOON_REPO={repo-name}
+set VERSION={version}
 echo Will build file %SPOONFILE%
 echo Version selected %VERSION%
 if NOT DEFINED SPOONFILE (

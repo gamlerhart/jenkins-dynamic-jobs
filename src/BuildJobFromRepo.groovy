@@ -49,7 +49,7 @@ newTestJobs.each {
 
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    jenkinsApi.postText("job/${it.info.testProjectName()}/build","")
+    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }
 println "Done. Building now"
 
@@ -72,11 +72,6 @@ def buildSpoonizeXml(BuildInfo projectInfo, templateXml){
 
 def baseXmlSetup(templateXml, BuildInfo projectInfo) {
     templateXml.disabled = "false"
-
-    def version = templateXml.depthFirst().find {
-        it.name() == "hudson.model.StringParameterDefinition" && it.name.text() == "VERSION"
-    }
-    version.defaultValue = projectInfo.version
 
     def gitConfig = tagByName(templateXml, "hudson.plugins.git.UserRemoteConfig")
     gitConfig.url = gitUrl()
@@ -112,6 +107,7 @@ def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){
     def text = scriptFile.getText("UTF-8")
     text.replace("{namespace}",projectInfo.namespace)
         .replace("{repo-name}",projectInfo.name)
+        .replace("{version}",projectInfo.version)
 }
 
 def readInfo(File root, File project){
