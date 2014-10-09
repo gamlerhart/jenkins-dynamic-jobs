@@ -48,7 +48,8 @@ class JenkinsOperations {
     }
 
     def getXml(String path) {
-        def request = new HttpGet(jenkinsUrl + path)
+        def fullUrl = jenkinsUrl + path
+        def request = new HttpGet(fullUrl)
         def response = httpclient.execute(request)
         if (response.getStatusLine().getStatusCode() == 200) {
             def content = EntityUtils.toString(response.getEntity())
@@ -56,13 +57,14 @@ class JenkinsOperations {
             response.close()
             result
         } else {
-            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $fullUrl with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
     def postXml(String path, body) {
         def bodyTxt = XmlUtil.serialize(body)
-        def request = new HttpPost(jenkinsUrl + path)
+        def fullUrl = jenkinsUrl + path
+        def request = new HttpPost(fullUrl)
         request.setHeader("Content-Type", "application/xml")
         request.setEntity(new StringEntity(bodyTxt))
         def response = httpclient.execute(request)
@@ -71,12 +73,13 @@ class JenkinsOperations {
             EntityUtils.consume(response.getEntity())
             response.close()
         } else {
-            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $fullUrl with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
     def postText(String path, String body) {
-        def request = new HttpPost(jenkinsUrl + path)
+        def fullUrl = jenkinsUrl + path
+        def request = new HttpPost(fullUrl)
         request.setHeader("Content-Type", "application/xml")
         request.setEntity(new StringEntity("text/plain"))
         def response = httpclient.execute(request)
@@ -85,7 +88,7 @@ class JenkinsOperations {
             EntityUtils.consume(response.getEntity())
             response.close()
         } else {
-            throw new WebException("Failed $path with status code: " + response.getStatusLine().getStatusCode())
+            throw new WebException("Failed $fullUrl with status code: " + response.getStatusLine().getStatusCode())
         }
     }
 
