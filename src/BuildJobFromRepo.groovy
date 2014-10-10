@@ -114,6 +114,7 @@ def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){
     text.replace("{namespace}",projectInfo.namespace)
         .replace("{repo-name}",projectInfo.name)
         .replace("{version}",projectInfo.version)
+        .replace("{working-directory}",projectInfo.workingDirectory)
 }
 
 def readInfo(File root, File project){
@@ -143,7 +144,13 @@ def readInfo(File root, File project){
     if(new File(root,"test").exists()){
         testFolder = "test"
     }
+    def relativePath = root.toPath().relativize(project.toPath())
+    def workingDir = relativePath.toString()
+    if(workingDir.isEmpty()){
+        workingDir = "."
+    }
     new BuildInfo(
+            workingDirectory:workingDir,
             namespace:"spoon-jenkins-user",
             name:name,
             email:email,
@@ -152,6 +159,7 @@ def readInfo(File root, File project){
 }
 
 @Immutable class BuildInfo {
+    String workingDirectory
     String namespace
     String name
     String email

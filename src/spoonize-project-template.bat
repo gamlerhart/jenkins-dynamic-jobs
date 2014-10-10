@@ -1,3 +1,4 @@
+cd {working-directory}
 set SPOON_NAMESPACE={namespace}
 set SPOON_REPO={repo-name}
 set VERSION={version}
