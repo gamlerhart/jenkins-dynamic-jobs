@@ -1,7 +1,14 @@
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-
 @BaseScript SharedFunctions mainScript
+
+def workAroundClassLoader(){
+    // No clue why needed, since it works in 'BuildJobFromRepo'
+    // The 'dyanmic' groovy script lookup is kind of 'meh'
+    println(BuildInfo.class)
+    println(BuildInfo.StaticVersion.class)
+    println(BuildInfo.MavenVersion.class)
+}
 
 println "Check if need to build!"
 def allRepos = readAllProjects()
@@ -27,7 +34,7 @@ def needToTrigger = mavenRepos.findAll { repo ->
     println "Project ${repo.namespace}/${repo.name}"
     def localVersion = localVersions[repo.name]
     println "Local version $localVersion"
-    println "Remove version ${repo.versionInfo.versionTag}"
+    println "Remote version ${repo.versionInfo.versionTag}"
     if(localVersion!=repo.versionInfo.versionTag){
         println "Remote an local version do not match. Trigger build for $repo"
         return true;
@@ -37,7 +44,7 @@ def needToTrigger = mavenRepos.findAll { repo ->
 }
 
 
-newSpoonizeJobs.each {
+needToTrigger.each {
     println "Posting trigger for $it"
     jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }

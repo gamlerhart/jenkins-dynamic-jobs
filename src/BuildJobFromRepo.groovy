@@ -1,6 +1,3 @@
-
-import groovy.json.JsonSlurper
-import groovy.transform.Immutable
 import groovy.transform.BaseScript
 @BaseScript SharedFunctions mainScript
 
@@ -15,9 +12,6 @@ println "We are going to build: "
 itemsToBuild.each{
     println "- "+it
 }
-
-println "Store local version info"
-storeVersionInfosLocal(itemsToBuild)
 
 
 def newSpoonizeJobs = itemsToBuild.collect { info ->
@@ -54,7 +48,7 @@ newSpecialTrigger.each {
 
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    //jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
+    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }
 println "Done. Building now"
 

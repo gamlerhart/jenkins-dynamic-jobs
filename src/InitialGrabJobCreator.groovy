@@ -1,10 +1,14 @@
-@Grab(group='org.apache.httpcomponents', module='httpclient', version='4.3.5' )
-import org.apache.http.client.HttpClient
-import groovy.xml.XmlUtil
 import groovy.transform.BaseScript
 @BaseScript SharedFunctions mainScript
 
 
+def workAroundClassLoader(){
+    // No clue why needed, since it works in 'BuildJobFromRepo'
+    // The 'dyanmic' groovy script lookup is kind of 'meh'
+    println(BuildInfo.class)
+    println(BuildInfo.StaticVersion.class)
+    println(BuildInfo.MavenVersion.class)
+}
 
 println "Building the project for Git-Repo: ${gitUrl()}"
 

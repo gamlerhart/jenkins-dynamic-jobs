@@ -47,4 +47,56 @@ public class BuildInfo {
                     '}';
         }
     }
+
+    static class StaticVersion extends BuildInfo.VersionSourceBase{
+        StaticVersion(File root, File project, json) {
+            super("static")
+            versionTag = "head"
+            def versionFile = SharedFunctions.configFileOrParent(root,project,"autobuild.version.txt")
+            if(versionFile.exists()){
+                versionTag = versionFile.getText("UTF-8")
+            }
+        }
+
+    }
+
+    static class MavenVersion extends BuildInfo.VersionSourceBase{
+        String group;
+        String artifactId;
+        String repo;
+
+        MavenVersion(File root, File project, json) {
+            super("maven")
+            this.group = json.group
+            this.artifactId = json.artifactId
+            this.repo = json.repo ?: "http://repo1.maven.org/maven2/"
+
+            def metaDataXml = repo+group.replace('.','/')+"/"+artifactId +"/maven-metadata.xml"
+            def remoteEntries = new HttpOperations().downloadXml(metaDataXml)
+            def allVersions = extractVersions(remoteEntries)
+            versionTag = allVersions.last()
+        }
+
+        def readVersion(){
+        }
+
+        def extractVersions(xml){
+            def versionsTag = xml.versioning.versions
+            def versions = versionsTag.version.collect{v -> v.text()}
+
+            versions.sort()
+        }
+
+
+        @Override
+        public String toString() {
+            return "MavenVersion{" +
+                    "type='" + type + '\'' +
+                    ", versionTag='" + versionTag + '\'' +
+                    ", group='" + group + '\'' +
+                    ", artifactId='" + artifactId + '\'' +
+                    ", repo='" + repo + '\'' +
+                    '}';
+        }
+    }
 }
