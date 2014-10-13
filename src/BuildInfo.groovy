@@ -13,6 +13,9 @@ public class BuildInfo {
     def testProjectName(){
         "$namespace.$name-test"
     }
+    def triggerProjectName(){
+        "$namespace.$name-trigger"
+    }
 
 
     @Override

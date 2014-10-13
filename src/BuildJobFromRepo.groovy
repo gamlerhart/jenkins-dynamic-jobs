@@ -6,6 +6,7 @@ import groovy.transform.BaseScript
 
 def spoonizeTemplate = jenkinsApi.getXmlText('/job/Template-Spoonize-Release/config.xml')
 def testTemplate = jenkinsApi.getXmlText('/job/Template-Test-Spoonized-Release/config.xml')
+def BuildTriggerConfig = jenkinsApi.getXmlText('/job/Template-Trigger-MavenUpdate/config.xml')
 
 itemsToBuild = readAllProjects()
 
@@ -29,6 +30,11 @@ def newTestJobs = itemsToBuild.collect { info ->
     [xml:xml,info:info]
 }
 
+def newSpecialTrigger = itemsToBuild.collect { info ->
+    def xml = buildTriggerXml(info,BuildTriggerConfig)
+    [xml:xml,info:info]
+}
+
 
 println "Posting spoonize jobs now"
 
@@ -41,9 +47,14 @@ newTestJobs.each {
     jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
 }
 
+println "Posting additional trigger jobs now"
+newSpecialTrigger.each {
+    jenkinsApi.updateOrCreateJob(it.info.triggerProjectName(),it.xml)
+}
+
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
+    //jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }
 println "Done. Building now"
 
@@ -86,6 +97,18 @@ def buildTestXml(BuildInfo projectInfo, theTemplate){
 
     def testMachines = tagByName(configXml,"org.jenkinsci.plugins.elasticaxisplugin.ElasticAxis")
     testMachines.label = projectInfo.platform+"-test"
+
+    configXml
+}
+
+def buildTriggerXml(BuildInfo projectInfo, theTemplate){
+    println "Building Trigger Job for: "+projectInfo
+    def configXml = new XmlSlurper().parseText(theTemplate )
+
+    baseXmlSetup(configXml, projectInfo)
+
+    def nextJob = tagByName(configXml,"hudson.plugins.parameterizedtrigger.BuildTriggerConfig")
+    nextJob.projects = projectInfo.testProjectName()
 
     configXml
 }
