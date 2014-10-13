@@ -45,7 +45,7 @@ def needToTrigger = mavenRepos.findAll { repo ->
 
 needToTrigger.each {
     println "Posting trigger for $it"
-    jenkinsApi.postText("job/${it.spoonizeProjectName()}/build","")
+    jenkinsApi.postText("job/${it.jobcontrolProjectName()}/build","")
 }
 
 storeVersionInfosLocal(mavenRepos)

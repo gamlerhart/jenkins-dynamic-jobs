@@ -7,6 +7,10 @@ public class BuildInfo {
     VersionSourceBase versionInfo
 
 
+    def jobcontrolProjectName(){
+        "$namespace.$name-job_control"
+    }
+
     def spoonizeProjectName(){
         "$namespace.$name-spoonize"
     }
