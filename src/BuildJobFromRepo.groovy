@@ -108,7 +108,7 @@ def buildTriggerXml(BuildInfo projectInfo, theTemplate){
     baseXmlSetup(configXml, projectInfo)
 
     def nextJob = tagByName(configXml,"hudson.plugins.parameterizedtrigger.BuildTriggerConfig")
-    nextJob.projects = projectInfo.testProjectName()
+    nextJob.projects = projectInfo.spoonizeProjectName()
 
     configXml
 }
