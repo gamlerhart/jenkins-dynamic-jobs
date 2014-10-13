@@ -23,7 +23,6 @@ if(mavenRepos.size()==0){
 def localVersions = null
 if(localVersionInfoFile.exists()){
     localVersions = new JsonSlurper().parse(localVersionInfoFile)
-    storeVersionInfosLocal(mavenRepos)
 } else{
     new JsonSlurper().parseText("{}")
     storeVersionInfosLocal(mavenRepos)
@@ -46,5 +45,7 @@ def needToTrigger = mavenRepos.findAll { repo ->
 
 needToTrigger.each {
     println "Posting trigger for $it"
-    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
+    jenkinsApi.postText("job/${it.spoonizeProjectName()}/build","")
 }
+
+storeVersionInfosLocal(mavenRepos)
