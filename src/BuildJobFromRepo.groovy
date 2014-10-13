@@ -45,17 +45,17 @@ def newTestJobs = itemsToBuild.collect { info ->
 
 println "Posting spoonize jobs now"
 newSpoonizeJobs.each {
-    jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
+    //jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
 }
 
 println "Posting testing jobs now"
 newTestJobs.each {
-    jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
+    //jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
 }
 
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
+    //jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }
 println "Done. Building now"
 
@@ -119,7 +119,7 @@ def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){
 
 def readInfo(File root, File project){
     def versionTag = "head"
-    def versionFile = new File(project,"autobuild.version.txt")
+    def versionFile = configFileOrParent(root,project,"autobuild.version.txt")
     if(versionFile.exists()){
         versionTag = versionFile.getText("UTF-8")
     }
@@ -133,7 +133,7 @@ def readInfo(File root, File project){
         name = getRepoName(gitUrl())
     }
 
-    def buildInfoFile = new File(project,"autobuild.config.json")
+    def buildInfoFile = configFileOrParent(root,project,"autobuild.config.json");
     if(buildInfoFile.exists()){
         def buildInfo =json.parse(buildInfoFile)
         platform = buildInfo.platform ?:platform
@@ -141,7 +141,8 @@ def readInfo(File root, File project){
         name = buildInfo.name ?:name
     }
     def testFolder = ""
-    if(new File(root,"test").exists()){
+    def testFolderTest = onfigFileOrParent(root,project,"test")
+    if(testFolderTest.exists()){
         testFolder = "test"
     }
     def relativePath = root.toPath().relativize(project.toPath())
@@ -156,6 +157,20 @@ def readInfo(File root, File project){
             email:email,
             platform: platform,
             version:versionTag)
+}
+
+def configFileOrParent(File root, File project, String configFileName){
+    if(project==root){
+        return new File(project,configFileName)
+    } else {
+        def configFile = new File(project,configFileName)
+        if(configFile.exists()){
+            return configFile
+        } else{
+            configFileOrParent(root,project.getParentFile(),configFileName)
+        }
+    }
+
 }
 
 @Immutable class BuildInfo {
