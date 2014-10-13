@@ -277,7 +277,7 @@ class JenkinsOperations {
 
     private def projectExists(projectName) {
         def request = new HttpGet(jenkinsUrl + "/job/$projectName/config.xml")
-        def response = httpclient.execute(request)
+        def response = httpOps.httpclient.execute(request)
         def success = response.getStatusLine().getStatusCode() == 200
         response.close()
         success
