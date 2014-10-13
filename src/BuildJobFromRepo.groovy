@@ -1,37 +1,23 @@
 
 import groovy.json.JsonSlurper
 import groovy.transform.Immutable
-import groovy.xml.XmlUtil
 import groovy.transform.BaseScript
 @BaseScript SharedFunctions mainScript
 
 def spoonizeTemplate = jenkinsApi.getXmlText('/job/Template-Spoonize-Release/config.xml')
 def testTemplate = jenkinsApi.getXmlText('/job/Template-Test-Spoonized-Release/config.xml')
 
-def listOfProjects = []
-def targetDir = new File("./target-repo")
-if(!targetDir.exists()) {
-    targetDir = new File("../target-repo")
-}
-targetDir.traverse { item ->
-    if(item.isFile() && item.getName()=="spoon.me"){
-        listOfProjects.add(item.getParentFile())
-    }
-}
-
-listOfProjects.each { item ->
-    println "Building $item"
-}
-
-def itemsToBuild =  listOfProjects.collect{
-    readInfo(targetDir,it)
-}
+itemsToBuild = readAllProjects()
 
 println "We are going to build: "
 
 itemsToBuild.each{
     println "- "+it
 }
+
+println "Store local version info"
+storeVersionInfosLocal(newSpoonizeJobs)
+
 
 def newSpoonizeJobs = itemsToBuild.collect { info ->
     def xml = buildSpoonizeXml(info,spoonizeTemplate)
@@ -43,19 +29,21 @@ def newTestJobs = itemsToBuild.collect { info ->
     [xml:xml,info:info]
 }
 
+
 println "Posting spoonize jobs now"
+
 newSpoonizeJobs.each {
-    //jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
+    jenkinsApi.updateOrCreateJob(it.info.spoonizeProjectName(),it.xml)
 }
 
 println "Posting testing jobs now"
 newTestJobs.each {
-    //jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
+    jenkinsApi.updateOrCreateJob(it.info.testProjectName(),it.xml)
 }
 
 println "Trigger build job now"
 newSpoonizeJobs.each {
-    //jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
+    jenkinsApi.postText("job/${it.info.spoonizeProjectName()}/build","")
 }
 println "Done. Building now"
 
@@ -115,77 +103,4 @@ def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){
         .replace("{repo-name}",projectInfo.name)
         .replace("{version}",projectInfo.version)
         .replace("{working-directory}",projectInfo.workingDirectory)
-}
-
-def readInfo(File root, File project){
-    def versionTag = "head"
-    def versionFile = configFileOrParent(root,project,"autobuild.version.txt")
-    if(versionFile.exists()){
-        versionTag = versionFile.getText("UTF-8")
-    }
-
-    def json = new JsonSlurper()
-
-    def platform = "32-bit"
-    def email = "roman@spoon.net"
-    def name = project.getName()
-    if(name=="target-repo"){
-        name = getRepoName(gitUrl())
-    }
-
-    def buildInfoFile = configFileOrParent(root,project,"autobuild.config.json");
-    if(buildInfoFile.exists()){
-        def buildInfo =json.parse(buildInfoFile)
-        platform = buildInfo.platform ?:platform
-        email = buildInfo.email ?:email
-        name = buildInfo.name ?:name
-    }
-    def testFolder = ""
-    def testFolderTest = onfigFileOrParent(root,project,"test")
-    if(testFolderTest.exists()){
-        testFolder = "test"
-    }
-    def relativePath = root.toPath().relativize(project.toPath())
-    def workingDir = relativePath.toString()
-    if(workingDir.isEmpty()){
-        workingDir = "."
-    }
-    new BuildInfo(
-            workingDirectory:workingDir,
-            namespace:"spoon-jenkins-user",
-            name:name,
-            email:email,
-            platform: platform,
-            version:versionTag)
-}
-
-def configFileOrParent(File root, File project, String configFileName){
-    if(project==root){
-        return new File(project,configFileName)
-    } else {
-        def configFile = new File(project,configFileName)
-        if(configFile.exists()){
-            return configFile
-        } else{
-            configFileOrParent(root,project.getParentFile(),configFileName)
-        }
-    }
-
-}
-
-@Immutable class BuildInfo {
-    String workingDirectory
-    String namespace
-    String name
-    String email
-    String platform
-    String version
-
-
-    def spoonizeProjectName(){
-        "$namespace.$name-spoonize"
-    }
-    def testProjectName(){
-        "$namespace.$name-test"
-    }
 }

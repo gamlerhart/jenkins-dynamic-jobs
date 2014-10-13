@@ -1,3 +1,5 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
 import groovy.xml.XmlUtil
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.StringEntity
@@ -9,6 +11,8 @@ import org.apache.http.util.EntityUtils
 
 abstract class SharedFunctions extends Script {
     public static def jenkinsApi = new JenkinsOperations(jenkinsUrl())
+
+    def localVersionInfoFile = new File("last-version-infos.json")
 
     static def getRepoName(String url) {
         new URI(url).getPath().split("/").last().split("\\.").first()
@@ -37,23 +41,211 @@ abstract class SharedFunctions extends Script {
         }
         env['JENKINS_URL']
     }
+
+    def readAllProjects(){
+        def listOfProjects = []
+        def targetDir = new File("./target-repo")
+        if(!targetDir.exists()) {
+            throw new FileNotFoundException("Expect project at "+targetDir)
+        }
+        targetDir.traverse { item ->
+            if(item.isFile() && item.getName()=="spoon.me"){
+                listOfProjects.add(item.getParentFile())
+            }
+        }
+
+        listOfProjects.each { item ->
+            println "Building $item"
+        }
+
+        def itemsToBuild =  listOfProjects.collect{
+            readConfigOfProject(targetDir,it)
+        }
+
+        itemsToBuild
+    }
+
+
+    def readConfigOfProject(File root, File project){
+        def json = new JsonSlurper()
+
+        def platform = "32-bit"
+        def email = "roman@spoon.net"
+        def name = project.getName()
+        if(name=="target-repo"){
+            name = getRepoName(gitUrl())
+        }
+
+        def versionInfo = new StaticVersion(root, project, null)
+        def buildInfoFile = configFileOrParent(root,project,"autobuild.config.json");
+        if(buildInfoFile.exists()){
+            def buildInfo =json.parse(buildInfoFile)
+            platform = buildInfo.platform ?:platform
+            email = buildInfo.email ?:email
+            name = buildInfo.name ?:name
+            name = buildInfo.name ?:name
+            name = buildInfo.name ?:name
+            versionInfo = extractVersionReader(root, project,buildInfo.'version-reader')
+        }
+        def testFolder = ""
+        def testFolderTest = configFileOrParent(root,project,"test")
+        if(testFolderTest.exists()){
+            testFolder = "test"
+        }
+        def relativePath = root.toPath().relativize(project.toPath())
+        def workingDir = relativePath.toString()
+        if(workingDir.isEmpty()){
+            workingDir = "."
+        }
+        new BuildInfo(
+                workingDirectory:workingDir,
+                namespace:"spoon-jenkins-user",
+                name:name,
+                email:email,
+                platform: platform,
+                versionInfo:versionInfo)
+    }
+
+    static def configFileOrParent(File root, File project, String configFileName){
+        if(project==root){
+            return new File(project,configFileName)
+        } else {
+            def configFile = new File(project,configFileName)
+            if(configFile.exists()){
+                return configFile
+            } else{
+                configFileOrParent(root,project.getParentFile(),configFileName)
+            }
+        }
+
+    }
+
+    def extractVersionReader(File root, File project,json){
+         if(json.type=="maven"){
+             new MavenVersion(root,project,json)
+         } else{
+             new StaticVersion(root,project,json)
+         }
+    }
+
+    def storeVersionInfosLocal(projectInfos){
+        def json = new HashMap()
+        projectInfos.each{it ->
+            if(it.versionInfo.type=="maven"){
+                json[it.name] = it.versionInfo.versionTag
+            }
+        }
+        localVersionInfoFile.write(new JsonBuilder(json).toPrettyString(),"UTF-8")
+    }
+
 }
 
-class JenkinsOperations {
+public class BuildInfo {
+    String workingDirectory
+    String namespace
+    String name
+    String email
+    String platform
+    VersionSourceBase versionInfo
+
+
+    def spoonizeProjectName(){
+        "$namespace.$name-spoonize"
+    }
+    def testProjectName(){
+        "$namespace.$name-test"
+    }
+
+
+    @Override
+    public String toString() {
+        return "BuildInfo{" +
+                "workingDirectory='" + workingDirectory + '\'' +
+                ", namespace='" + namespace + '\'' +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", platform='" + platform + '\'' +
+                ", versionInfo=" + versionInfo +
+                '}';
+    }
+}
+
+abstract class VersionSourceBase{
+    VersionSourceBase(String type) {
+        this.type = type
+    }
+    String type
+    String versionTag
+
+    @Override
+    public String toString() {
+        return "VersionSourceBase{" +
+                "type='" + type + '\'' +
+                ", versionTag='" + versionTag + '\'' +
+                '}';
+    }
+}
+
+class StaticVersion extends VersionSourceBase{
+    StaticVersion(File root, File project, json) {
+        super("static")
+        versionTag = "head"
+        def versionFile = SharedFunctions.configFileOrParent(root,project,"autobuild.version.txt")
+        if(versionFile.exists()){
+            versionTag = versionFile.getText("UTF-8")
+        }
+    }
+
+}
+class MavenVersion extends VersionSourceBase{
+    String group;
+    String artifactId;
+    String repo;
+
+    MavenVersion(File root, File project, json) {
+        super("maven")
+        this.group = json.group
+        this.artifactId = json.artifactId
+        this.repo = json.repo ?: "http://repo1.maven.org/maven2/"
+
+        def metaDataXml = repo+group.replace('.','/')+"/"+artifactId +"/maven-metadata.xml"
+        def remoteEntries = new HttpOperations().downloadXml(metaDataXml)
+        def allVersions = extractVersions(remoteEntries)
+        versionTag = allVersions.last()
+    }
+
+    def readVersion(){
+    }
+
+    def extractVersions(xml){
+        def versionsTag = xml.versioning.versions
+        def versions = versionsTag.version.collect{v -> v.text()}
+
+        versions.sort()
+    }
+
+
+    @Override
+    public String toString() {
+        return "MavenVersion{" +
+                "type='" + type + '\'' +
+                ", versionTag='" + versionTag + '\'' +
+                ", group='" + group + '\'' +
+                ", artifactId='" + artifactId + '\'' +
+                ", repo='" + repo + '\'' +
+                '}';
+    }
+}
+
+
+
+
+
+def class HttpOperations{
     def httpclient = HttpClients.createDefault()
-    String jenkinsUrl;
 
-    JenkinsOperations(String jenkinsUrl) {
-        this.jenkinsUrl = jenkinsUrl
-    }
-
-    def getXml(String path) {
-        def result = new XmlSlurper().parseText(getXmlText(path))
-        result
-    }
-    def getXmlText(String path) {
-        def fullUrl = jenkinsUrl + path
-        def request = new HttpGet(fullUrl)
+    def downloadText(String url){
+        def request = new HttpGet(url)
         def response = httpclient.execute(request)
         if (response.getStatusLine().getStatusCode() == 200) {
             def content = EntityUtils.toString(response.getEntity())
@@ -62,6 +254,31 @@ class JenkinsOperations {
         } else {
             throw new WebException("Failed $fullUrl with status code: " + response.getStatusLine().getStatusCode())
         }
+
+    }
+
+    def downloadXml(String url){
+        def rawXml = downloadText(url)
+        def xml = new XmlSlurper().parseText(rawXml)
+        xml
+    }
+}
+
+class JenkinsOperations {
+    String jenkinsUrl;
+    def httpOps = new HttpOperations()
+
+    JenkinsOperations(String jenkinsUrl) {
+        this.jenkinsUrl = jenkinsUrl
+    }
+
+    def getXml(String path) {
+        def fullUrl = jenkinsUrl + path
+        httpOps.downloadXml(fullUrl)
+    }
+    def getXmlText(String path) {
+        def fullUrl = jenkinsUrl + path
+        httpOps.downloadText(fullUrl)
     }
 
     def postXml(String path, body) {
