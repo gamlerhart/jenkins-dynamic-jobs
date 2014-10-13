@@ -138,104 +138,59 @@ abstract class SharedFunctions extends Script {
         localVersionInfoFile.write(new JsonBuilder(json).toPrettyString(),"UTF-8")
     }
 
-}
 
-public class BuildInfo {
-    String workingDirectory
-    String namespace
-    String name
-    String email
-    String platform
-    VersionSourceBase versionInfo
+    class StaticVersion extends BuildInfo.VersionSourceBase{
+        StaticVersion(File root, File project, json) {
+            super("static")
+            versionTag = "head"
+            def versionFile = SharedFunctions.configFileOrParent(root,project,"autobuild.version.txt")
+            if(versionFile.exists()){
+                versionTag = versionFile.getText("UTF-8")
+            }
+        }
 
-
-    def spoonizeProjectName(){
-        "$namespace.$name-spoonize"
     }
-    def testProjectName(){
-        "$namespace.$name-test"
-    }
+    class MavenVersion extends BuildInfo.VersionSourceBase{
+        String group;
+        String artifactId;
+        String repo;
+
+        MavenVersion(File root, File project, json) {
+            super("maven")
+            this.group = json.group
+            this.artifactId = json.artifactId
+            this.repo = json.repo ?: "http://repo1.maven.org/maven2/"
+
+            def metaDataXml = repo+group.replace('.','/')+"/"+artifactId +"/maven-metadata.xml"
+            def remoteEntries = new HttpOperations().downloadXml(metaDataXml)
+            def allVersions = extractVersions(remoteEntries)
+            versionTag = allVersions.last()
+        }
+
+        def readVersion(){
+        }
+
+        def extractVersions(xml){
+            def versionsTag = xml.versioning.versions
+            def versions = versionsTag.version.collect{v -> v.text()}
+
+            versions.sort()
+        }
 
 
-    @Override
-    public String toString() {
-        return "BuildInfo{" +
-                "workingDirectory='" + workingDirectory + '\'' +
-                ", namespace='" + namespace + '\'' +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", platform='" + platform + '\'' +
-                ", versionInfo=" + versionInfo +
-                '}';
-    }
-}
-
-abstract class VersionSourceBase{
-    VersionSourceBase(String type) {
-        this.type = type
-    }
-    String type
-    String versionTag
-
-    @Override
-    public String toString() {
-        return "VersionSourceBase{" +
-                "type='" + type + '\'' +
-                ", versionTag='" + versionTag + '\'' +
-                '}';
-    }
-}
-
-class StaticVersion extends VersionSourceBase{
-    StaticVersion(File root, File project, json) {
-        super("static")
-        versionTag = "head"
-        def versionFile = SharedFunctions.configFileOrParent(root,project,"autobuild.version.txt")
-        if(versionFile.exists()){
-            versionTag = versionFile.getText("UTF-8")
+        @Override
+        public String toString() {
+            return "MavenVersion{" +
+                    "type='" + type + '\'' +
+                    ", versionTag='" + versionTag + '\'' +
+                    ", group='" + group + '\'' +
+                    ", artifactId='" + artifactId + '\'' +
+                    ", repo='" + repo + '\'' +
+                    '}';
         }
     }
-
 }
-class MavenVersion extends VersionSourceBase{
-    String group;
-    String artifactId;
-    String repo;
 
-    MavenVersion(File root, File project, json) {
-        super("maven")
-        this.group = json.group
-        this.artifactId = json.artifactId
-        this.repo = json.repo ?: "http://repo1.maven.org/maven2/"
-
-        def metaDataXml = repo+group.replace('.','/')+"/"+artifactId +"/maven-metadata.xml"
-        def remoteEntries = new HttpOperations().downloadXml(metaDataXml)
-        def allVersions = extractVersions(remoteEntries)
-        versionTag = allVersions.last()
-    }
-
-    def readVersion(){
-    }
-
-    def extractVersions(xml){
-        def versionsTag = xml.versioning.versions
-        def versions = versionsTag.version.collect{v -> v.text()}
-
-        versions.sort()
-    }
-
-
-    @Override
-    public String toString() {
-        return "MavenVersion{" +
-                "type='" + type + '\'' +
-                ", versionTag='" + versionTag + '\'' +
-                ", group='" + group + '\'' +
-                ", artifactId='" + artifactId + '\'' +
-                ", repo='" + repo + '\'' +
-                '}';
-    }
-}
 
 
 

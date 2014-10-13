@@ -16,7 +16,7 @@ itemsToBuild.each{
 }
 
 println "Store local version info"
-storeVersionInfosLocal(newSpoonizeJobs)
+storeVersionInfosLocal(itemsToBuild)
 
 
 def newSpoonizeJobs = itemsToBuild.collect { info ->
@@ -101,6 +101,6 @@ def copyInSpoonizeCommand(BuildInfo projectInfo,String templateName){
     def text = scriptFile.getText("UTF-8")
     text.replace("{namespace}",projectInfo.namespace)
         .replace("{repo-name}",projectInfo.name)
-        .replace("{version}",projectInfo.version)
+        .replace("{version}",projectInfo.versionInfo.versionTag)
         .replace("{working-directory}",projectInfo.workingDirectory)
 }
