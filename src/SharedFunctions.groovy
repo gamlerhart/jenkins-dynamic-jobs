@@ -287,7 +287,7 @@ class JenkinsOperations {
         def request = new HttpPost(fullUrl)
         request.setHeader("Content-Type", "application/xml")
         request.setEntity(new StringEntity(bodyTxt))
-        def response = httpclient.execute(request)
+        def response = httpOps.httpclient.execute(request)
         def status = response.getStatusLine().getStatusCode()
         if (status >= 200 && status < 300) {
             EntityUtils.consume(response.getEntity())
@@ -302,7 +302,7 @@ class JenkinsOperations {
         def request = new HttpPost(fullUrl)
         request.setHeader("Content-Type", "application/xml")
         request.setEntity(new StringEntity("text/plain"))
-        def response = httpclient.execute(request)
+        def response = httpOps.httpclient.execute(request)
         def status = response.getStatusLine().getStatusCode()
         if (status >= 200 && status < 300) {
             EntityUtils.consume(response.getEntity())
