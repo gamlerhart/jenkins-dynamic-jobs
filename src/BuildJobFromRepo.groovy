@@ -101,6 +101,11 @@ def buildTriggerXml(BuildInfo projectInfo, theTemplate){
 
     baseXmlSetup(configXml, projectInfo)
 
+    def copyLastVersion = configXml.depthFirst().find {
+        it.name() == "hudson.plugins.copyartifact.CopyArtifact" && it.filter.text()=="last-version-infos.json"
+    }
+    copyLastVersion.project = projectInfo.triggerProjectName()
+
     configXml
 }
 
