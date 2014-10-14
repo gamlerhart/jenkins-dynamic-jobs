@@ -68,21 +68,22 @@ public class BuildInfo {
         String group;
         String artifactId;
         String repo;
+        String filter;
 
         MavenVersion(File root, File project, json) {
             super("maven")
             this.group = json.group
             this.artifactId = json.artifactId
             this.repo = json.repo ?: "http://repo1.maven.org/maven2/"
+            this.filter = json.filter ?: ".*"
 
             def metaDataXml = repo+group.replace('.','/')+"/"+artifactId +"/maven-metadata.xml"
             def remoteEntries = new HttpOperations().downloadXml(metaDataXml)
             def allVersions = extractVersions(remoteEntries)
-            versionTag = allVersions.last()
+            def valideVersions = allVersions.findAll {it->it.matches(this.filter)}
+            versionTag = valideVersions.last()
         }
 
-        def readVersion(){
-        }
 
         def extractVersions(xml){
             def versionsTag = xml.versioning.versions
